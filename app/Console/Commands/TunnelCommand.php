@@ -17,9 +17,14 @@ class TunnelCommand extends Command
     {
         $this->info('🚀 Avvio ambiente di sviluppo con Cloudflare Tunnel...');
 
+        // Rimuoviamo il file hot di Vite se esiste, per forzare l'uso della build statica
+        if (file_exists(public_path('hot'))) {
+            unlink(public_path('hot'));
+        }
+
         $this->processes = [
-            'server' => new Process(['php', 'artisan', 'serve', '--host=0.0.0.0']),
-            'vite' => new Process(['npm', 'run', 'dev']),
+            'server' => new Process(['php', 'artisan', 'serve', '--host=0.0.0.0', '--port=8000']),
+            'vite' => new Process(['npm', 'run', 'build', '--', '--watch']),
             'tunnel' => new Process(['./cloudflared', 'tunnel', '--url', 'http://localhost:8000']),
         ];
 

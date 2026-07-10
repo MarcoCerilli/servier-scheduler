@@ -24,17 +24,27 @@ class SecurityHeaders
 
         // Content-Security-Policy — adattare in produzione per rimuovere unsafe-inline
         // TODO(security): Usare nonce per script e style in produzione
-        $response->headers->set(
-            'Content-Security-Policy',
-            "default-src 'self'; " .
-            "script-src 'self' 'unsafe-inline'; " .
+        $csp = "default-src 'self'; " .
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " .
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " .
             "font-src 'self' https://fonts.gstatic.com; " .
             "img-src 'self' data: blob:; " .
             "connect-src 'self'; " .
             "frame-ancestors 'none'; " .
-            "object-src 'none';"
-        );
+            "object-src 'none';";
+
+        if (app()->environment('local', 'testing')) {
+            $csp = "default-src 'self' http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:* 'unsafe-inline' 'unsafe-eval'; " .
+                   "script-src 'self' http://localhost:* http://127.0.0.1:* 'unsafe-inline' 'unsafe-eval'; " .
+                   "style-src 'self' https://fonts.googleapis.com http://localhost:* http://127.0.0.1:* 'unsafe-inline'; " .
+                   "font-src 'self' https://fonts.gstatic.com; " .
+                   "img-src 'self' data: blob:; " .
+                   "connect-src 'self' http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:* wss://localhost:* wss://127.0.0.1:*; " .
+                   "frame-ancestors 'none'; " .
+                   "object-src 'none';";
+        }
+
+        $response->headers->set('Content-Security-Policy', $csp);
 
         return $response;
     }
