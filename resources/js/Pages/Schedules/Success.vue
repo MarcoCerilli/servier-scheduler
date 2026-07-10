@@ -67,33 +67,6 @@ const copied = ref(false);
                 </div>
             </div>
 
-            <!-- Management URL -->
-            <div class="management-section">
-                <div class="management-label">
-                    🔑 URL di gestione privato
-                </div>
-                <div class="management-hint">
-                    Salva questo link: è l'unico modo per gestire questa pianificazione in futuro.
-                    Non viene mai mostrato di nuovo.
-                </div>
-                <div class="link-row">
-                    <input
-                        type="text"
-                        :value="schedule.management_url"
-                        readonly
-                        class="link-input management-input"
-                        id="management-url-input"
-                        aria-label="URL di gestione"
-                    />
-                    <button
-                        type="button"
-                        class="btn-copy"
-                        @click="copyToClipboard(schedule.management_url)"
-                        aria-label="Copia URL gestione"
-                    >⎘</button>
-                </div>
-            </div>
-
             <!-- Azioni -->
             <div class="actions">
                 <a :href="schedule.public_url" class="btn btn-primary">Vai alla pagina pubblica</a>
@@ -134,11 +107,12 @@ h1 { font-size: 1.75rem; font-weight: 700; color: #111827; margin-bottom: 0.5rem
 .count-num { font-size: 1.4rem; font-weight: 700; color: #4f46e5; }
 .count-lbl { font-size: 0.85rem; color: #4b5563; }
 
-.qr-wrap { margin-bottom: 1.5rem; }
+.qr-wrap { margin-bottom: 1.5rem; display: flex; justify-content: center; }
 .qr-img {
     border-radius: 12px; border: 4px solid #e5e7eb;
     background: white; padding: 8px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+    margin: 0 auto;
 }
 
 .link-section, .management-section { margin-bottom: 1.25rem; text-align: left; }
