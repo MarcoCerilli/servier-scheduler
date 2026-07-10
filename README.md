@@ -1,58 +1,66 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Servier Scheduler
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Questo progetto è un'applicazione Laravel con frontend Vite/Vue (Inertia). 
+Include un sistema automatizzato per lo sviluppo locale e la condivisione pubblica istantanea tramite Cloudflare Tunnel.
 
-## About Laravel
+## Requisiti
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **PHP 8.3+**
+- **Composer**
+- **Node.js & NPM**
+- **Cloudflared** (Il file eseguibile deve essere presente nella root del progetto oppure installato globalmente)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Installazione per i Collaboratori
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Se hai appena clonato il progetto da GitHub, segui questi semplici passaggi per configurare l'ambiente sul tuo PC:
 
-## Learning Laravel
+1. **Installa le dipendenze backend (PHP):**
+   ```bash
+   composer install
+   ```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+2. **Installa le dipendenze frontend (Node):**
+   ```bash
+   npm install
+   ```
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+3. **Crea il file di configurazione e genera la chiave:**
+   ```bash
+   cp .env.example .env
+   php artisan key:generate
+   ```
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+4. **Prepara il Database:**
+   *(Assicurati di aver configurato i parametri del database nel file `.env`)*
+   ```bash
+   php artisan migrate
+   ```
 
-## Agentic Development
+---
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Avvio dell'ambiente di Sviluppo (Comando Rapido)
+
+Per facilitare lo sviluppo e testare l'app in contemporanea su PC e Smartphone (senza conflitti di porte o problemi di HTTPS), abbiamo creato un comando personalizzato che avvia tutto il necessario.
+
+Dal terminale, esegui semplicemente:
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+php artisan app:tunnel
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+### Cosa fa questo comando in automatico?
+- **Server:** Avvia il server locale di Laravel sulla porta 8000 (`php artisan serve`).
+- **Frontend (Vite):** Avvia la compilazione continua in background (`npm run build --watch`). Questo metodo garantisce che i file grafici vengano serviti staticamente, eliminando i classici problemi di "Mixed Content" e schermata bianca quando si testa da dispositivi mobile tramite proxy HTTPS.
+- **Tunnel:** Avvia `cloudflared` ed espone il sito con un link pubblico e sicuro (es. `https://....trycloudflare.com`).
+- **Auto-Configurazione:** Estrae il link generato da Cloudflare e lo inserisce in automatico nella variabile `APP_URL` del file `.env`.
 
-## Contributing
+### Come fermare l'ambiente
+Quando hai finito di lavorare, **non chiudere brutalmente la finestra**. Clicca all'interno del terminale e premi la combinazione:
+`Ctrl + C`
+Il comando intercetterà il segnale e si occuperà di terminare in modo pulito tutti i processi (PHP, Vite e Cloudflared), lasciando le porte libere per il prossimo avvio.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+---
 
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## Note Tecniche (CSP e Sicurezza)
+Il progetto utilizza un middleware dedicato (`App\Http\Middleware\SecurityHeaders.php`) che inietta Content-Security-Policy (CSP) stringenti.
+Se l'ambiente nel `.env` è impostato su `local`, le regole sono automaticamente allentate per permettere il corretto funzionamento degli script locali, quindi non richiede configurazioni extra da parte tua.
