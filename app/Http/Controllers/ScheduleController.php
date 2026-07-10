@@ -5,10 +5,10 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreScheduleRequest;
 use App\Models\Schedule;
 use App\Models\ScheduleOccurrence;
-use App\Services\IcsService;
 use App\Services\QrCodeService;
 use App\Services\RecurrenceService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -18,7 +18,6 @@ class ScheduleController extends Controller
     public function __construct(
         private readonly RecurrenceService $recurrenceService,
         private readonly QrCodeService     $qrCodeService,
-        private readonly IcsService        $icsService,
     ) {}
 
     /**
@@ -37,12 +36,14 @@ class ScheduleController extends Controller
     public function store(StoreScheduleRequest $request): \Illuminate\Http\RedirectResponse
     {
         $data = $request->validatedWithReminder();
+        $occurrenceCount = 0;
 
-        DB::transaction(function () use ($data, &$schedule) {
+        DB::transaction(function () use ($data, &$schedule, &$occurrenceCount) {
             $schedule = Schedule::create($data);
 
             // Calcola e salva le occorrenze
             $occurrences = $this->recurrenceService->calculate($schedule);
+            $occurrenceCount = count($occurrences);
 
             $rows = [];
             foreach ($occurrences as $i => $occ) {
@@ -63,7 +64,10 @@ class ScheduleController extends Controller
             $schedule->update(['qr_code_path' => $qrPath]);
         });
 
-        return redirect()->route('schedule.success', $schedule->public_token);
+        // Passa il count via sessione flash per evitare una query aggiuntiva in success()
+        return redirect()
+            ->route('schedule.success', $schedule->public_token)
+            ->with('occurrences_count', $occurrenceCount);
     }
 
     /**
@@ -74,13 +78,16 @@ class ScheduleController extends Controller
     {
         $schedule = Schedule::byPublicToken($token)->firstOrFail();
 
+        // Usa il count dalla sessione flash (passato da store()) — evita una query DB
+        $count = session('occurrences_count') ?? $schedule->occurrences()->count();
+
         return Inertia::render('Schedules/Success', [
-            'schedule'       => [
-                'title'          => $schedule->title,
-                'public_url'     => $schedule->publicUrl(),
-                'management_url' => $schedule->managementUrl(),
-                'qr_url'         => $this->qrCodeService->publicUrl($schedule),
-                'occurrences_count' => $schedule->occurrences()->count(),
+            'schedule' => [
+                'title'             => $schedule->title,
+                'public_url'        => $schedule->publicUrl(),
+                'management_url'    => $schedule->managementUrl(),
+                'qr_url'            => $this->qrCodeService->publicUrl($schedule),
+                'occurrences_count' => $count,
             ],
         ]);
     }
@@ -103,7 +110,7 @@ class ScheduleController extends Controller
             'event_duration_minutes' => 'required|integer|min:1|max:1440',
             'excluded_dates'         => 'nullable|array|max:100',
             'excluded_dates.*'       => 'date_format:Y-m-d',
-            'timezone'               => 'required|string|in:' . implode(',', timezone_identifiers_list()),
+            'timezone'               => 'required|string|in:' . implode(',', Cache::remember('timezone_list', 86400, fn () => timezone_identifiers_list())),
         ]);
 
         // Crea un modello temporaneo senza salvarlo
@@ -133,13 +140,16 @@ class ScheduleController extends Controller
      */
     private function getGroupedTimezones(): array
     {
-        $grouped = [];
-        foreach (timezone_identifiers_list() as $tz) {
-            $parts = explode('/', $tz);
-            $area  = count($parts) > 1 ? $parts[0] : 'Other';
-            $grouped[$area][] = $tz;
-        }
-        ksort($grouped);
-        return $grouped;
+        // Cachato per 24h: la lista dei timezone è statica e genera 590+ entry
+        return Cache::remember('grouped_timezones', 86400, function () {
+            $grouped = [];
+            foreach (timezone_identifiers_list() as $tz) {
+                $parts = explode('/', $tz);
+                $area  = count($parts) > 1 ? $parts[0] : 'Other';
+                $grouped[$area][] = $tz;
+            }
+            ksort($grouped);
+            return $grouped;
+        });
     }
 }

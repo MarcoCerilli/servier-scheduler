@@ -23,10 +23,12 @@ class RecurrenceService
         $maxOcc       = (int) config('schedule.max_occurrences', 365);
         $durationMins = $schedule->event_duration_minutes;
         $effectiveEnd = $schedule->effectiveEndDate();
-        $excludedDates = array_map(
-            fn ($d) => CarbonImmutable::parse($d, $schedule->timezone)->startOfDay(),
-            $schedule->excluded_dates ?? []
-        );
+
+        // Costruisce un Set O(1) di date escluse (stringa 'Y-m-d' nel timezone corretto)
+        $excludedSet = [];
+        foreach ($schedule->excluded_dates ?? [] as $d) {
+            $excludedSet[CarbonImmutable::parse($d, $schedule->timezone)->format('Y-m-d')] = true;
+        }
 
         $allOccurrences = [];
 
@@ -45,14 +47,12 @@ class RecurrenceService
             );
 
             if ($dtStart === false) {
-                // Se createFromFormat fallisce, skip silenzioso e continua
                 continue;
             }
 
             if ($schedule->frequency === 'once') {
-                // Evento singolo: nessuna RRule, solo il dtStart
                 $starts = CarbonImmutable::instance($dtStart);
-                if (! $this->isExcluded($starts, $excludedDates)) {
+                if (! isset($excludedSet[$starts->format('Y-m-d')])) {
                     $allOccurrences[] = $this->buildOccurrence($starts, $durationMins);
                 }
                 continue;
@@ -66,15 +66,13 @@ class RecurrenceService
                 $tz
             );
 
-            // Calcola le occorrenze con RRule semplice (senza EXDATE via RSet)
             $rrule = new RRule($rruleParams);
 
             foreach ($rrule as $occurrence) {
                 /** @var DateTimeImmutable $occurrence */
                 $starts = CarbonImmutable::instance($occurrence)->setTimezone($schedule->timezone);
 
-                // Applica il filtro EXDATE manualmente (più affidabile con DST)
-                if ($this->isExcluded($starts, $excludedDates)) {
+                if (isset($excludedSet[$starts->format('Y-m-d')])) {
                     continue;
                 }
 
@@ -119,13 +117,8 @@ class RecurrenceService
             unset($params['COUNT']); // UNTIL ha precedenza su COUNT
         }
 
-        // Giorni della settimana (solo per WEEKLY)
-        if ($schedule->frequency === 'weekly' && ! empty($schedule->days_of_week)) {
-            $params['BYDAY'] = $this->mapDaysOfWeek($schedule->days_of_week);
-        }
-
-        // Per MONTHLY con giorni specifici della settimana
-        if ($schedule->frequency === 'monthly' && ! empty($schedule->days_of_week)) {
+        // Giorni della settimana (weekly e monthly con selezione giorni)
+        if (in_array($schedule->frequency, ['weekly', 'monthly'], true) && ! empty($schedule->days_of_week)) {
             $params['BYDAY'] = $this->mapDaysOfWeek($schedule->days_of_week);
         }
 
@@ -142,16 +135,11 @@ class RecurrenceService
     }
 
     /**
-     * Controlla se un'occorrenza cade in una data esclusa.
+     * Controlla se un'occorrenza cade in una data esclusa — O(1) lookup via Set.
      */
-    private function isExcluded(CarbonImmutable $starts, array $excludedDates): bool
+    private function isExcluded(CarbonImmutable $starts, array $excludedSet): bool
     {
-        foreach ($excludedDates as $excluded) {
-            if ($starts->isSameDay($excluded)) {
-                return true;
-            }
-        }
-        return false;
+        return isset($excludedSet[$starts->format('Y-m-d')]);
     }
 
     private function buildOccurrence(CarbonImmutable $starts, int $durationMins): array
