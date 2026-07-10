@@ -20,8 +20,8 @@ const copied = ref(false);
 <template>
     <Head title="Pianificazione creata!" />
 
-    <div class="page-wrap">
-        <div class="success-card">
+    <main class="page-wrap">
+        <section class="success-card" aria-labelledby="success-title">
             <!-- Icona successo -->
             <div class="success-icon">
                 <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -29,7 +29,7 @@ const copied = ref(false);
                 </svg>
             </div>
 
-            <h1>Pianificazione creata!</h1>
+            <h1 id="success-title">Pianificazione creata!</h1>
             <p class="subtitle">La tua pianificazione è pronta. Condividi il link o il QR Code.</p>
 
             <!-- Contatore -->
@@ -72,8 +72,8 @@ const copied = ref(false);
                 <a :href="schedule.public_url" class="btn btn-primary">Vai alla pagina pubblica</a>
                 <a href="/crea" class="btn btn-secondary">+ Crea un'altra</a>
             </div>
-        </div>
-    </div>
+        </section>
+    </main>
 </template>
 
 <style scoped>
@@ -144,8 +144,10 @@ h1 { font-size: 1.75rem; font-weight: 700; color: #111827; margin-bottom: 0.5rem
 }
 .btn-primary { background: #4f46e5; color: white; }
 .btn-primary:hover { background: #5558e3; transform: translateY(-1px); }
+.btn-primary:focus-visible { outline: 2px solid #4f46e5; outline-offset: 2px; }
 .btn-secondary { background: #f3f4f6; color: #4b5563; border: 1px solid #e5e7eb; }
 .btn-secondary:hover { background: #e5e7eb; }
+.btn-secondary:focus-visible { outline: 2px solid #9ca3af; outline-offset: 2px; }
 
 @media (max-width: 480px) {
     .success-card { padding: 1.5rem 1rem; }

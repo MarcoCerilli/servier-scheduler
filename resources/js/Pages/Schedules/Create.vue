@@ -120,7 +120,7 @@ const stepValid = computed(() => {
 <template>
     <Head title="Crea Pianificazione" />
 
-    <div class="page-wrap">
+    <main class="page-wrap">
         <!-- Logo / Brand -->
         <div class="brand">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -132,7 +132,7 @@ const stepValid = computed(() => {
             <span>Servier Scheduler</span>
         </div>
 
-        <div class="form-card">
+        <form class="form-card" @submit.prevent="submit">
 
             <!-- Progress bar -->
             <div class="progress-bar">
@@ -488,18 +488,17 @@ const stepValid = computed(() => {
 
                 <button
                     v-else
-                    type="button"
+                    type="submit"
                     class="btn btn-success"
                     :disabled="form.processing"
-                    @click="submit"
                 >
                     <span v-if="form.processing">Salvataggio...</span>
                     <span v-else>✓ Crea Pianificazione</span>
                 </button>
             </div>
 
-        </div>
-    </div>
+        </form>
+    </main>
 </template>
 
 <style scoped>
