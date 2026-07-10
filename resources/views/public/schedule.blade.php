@@ -408,7 +408,7 @@
     {{-- CTA Aggiungi al calendario --}}
     @if($totalCount > 0)
     <div style="margin-top: 1.5rem;">
-        <a href="{{ route('schedule.ics', $schedule->public_token) }}"
+        <a href="{{ str_replace(['http://', 'https://'], 'webcal://', route('schedule.ics', $schedule->public_token)) }}"
            class="btn-calendar"
            id="add-to-calendar-btn"
            aria-label="Aggiungi al calendario">
